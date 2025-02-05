@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: 
+metadata:
+  name: web-coffee-deployment
+spec:
+  replicas: 2 
+  selector: 
+    matchLabels:
+      app: web-coffee
+  template:
+    metadata:
+    labels:
+      app: web-coffee
+    spec:
+      containers:
+        - name: web-coffee-container
+          image: banamouad/webcoffee:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: web-coffee-config
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100"
+            limits:
+              memory: "128M1" 
+              cpu: "200" 
+          readinessProbe:
+            httpGet:
+              path: /healthz 
+              port: 3000
+            initialDelaySeconds: 5 
+            periodSeconds: 10 
+          livenessProbe:
+
+
+
+
+
+---        
+apiVersion: v1 
+kind: Service 
+metadata:
+  name: web-coffee-service
+spec:
+  selector:
+    app: web-coffee
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: LoadBalancer
+---
+apiVersion: autoscaling/v2 
+kind: HorizontalPodAutoscaler
+metadata:
+  name: web-coffee-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1 
+    kind: Deployment
+    name: web-coffee-deployment
+  minReplicas: 1
+  maxReplicas: 5 
+  metrics:
+    - type: Resource
+      resource:
+      name: cpu
+      target:
+        type: Utilization
